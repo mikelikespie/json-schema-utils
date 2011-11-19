@@ -1,0 +1,11 @@
+Metadata-Version: 1.0
+Name: json-schema-utils
+Version: 0.0dev
+Summary: Utility for JSON-schema generation
+Home-page: http://lolrus.org
+Author: Mike Lewis
+Author-email: mikelikespie@gmail.com
+License: MIT
+Description: UNKNOWN
+Keywords: json schema inference generator
+Platform: UNKNOWN
