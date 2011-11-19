@@ -5,7 +5,7 @@ version = '0.0'
 
 setup(name='json-schema-utils',
       version=version,
-      description="Utility for JSON-schema generation",
+      description="Utility library for JSON-schema generation",
       long_description="""\
 """,
       classifiers=[], # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers

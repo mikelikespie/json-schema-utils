@@ -1,9 +1,0 @@
-setup.cfg
-setup.py
-json_schema_utils.egg-info/PKG-INFO
-json_schema_utils.egg-info/SOURCES.txt
-json_schema_utils.egg-info/dependency_links.txt
-json_schema_utils.egg-info/entry_points.txt
-json_schema_utils.egg-info/top_level.txt
-json_schema_utils.egg-info/zip-safe
-jsonschemautils/__init__.py
