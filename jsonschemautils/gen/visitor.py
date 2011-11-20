@@ -2,52 +2,55 @@ from collections import namedtuple
 
 from schema import Node
 from jsonschemautils.util import js_primitive
+from rules import RuleSet
 
-_VisitorState = namedtuple('VisitorState', ['path', 'contents'])
-class VisitorState(_VisitorState):
+
+_BuilderState = namedtuple('BuilderState', ['path', 'element'])
+class BuilderState(_BuilderState):
     """
     State of the visitor
     """
 
 
 class DocumentVisitor(object):
-    def __init__(self):
+    def __init__(self, rules=RuleSet()):
+        """
+        :param rules: Rules to apply while walking
+        :type rules: :class:`rules.BaseRule`
+        """
+ 
         self.root_node = Node()
-        self.root_node.possible_types.add(('type', 'object'))
+        self.root_node.possible_types.add('object')
+        self.rules = rules
 
     def walk_document(self, document):
         if isinstance(document, list):
             for e in document:
-                self._traverse(e, ())
+                self._traverse(BuilderState((), e))
         else:
-            self._traverse(document, ())
+            self._traverse(BuilderState((), document))
 
 
-    def _traverse(self, element, path):
+    def _traverse(self, builder_state):
+        path = builder_state.path
+        element = builder_state.element
+
         # TODO: enum detection
         basetype = js_primitive(element)
 
-        override = None #override_type(element, path)
 
-        self.register_type(path, ('type', basetype), element, override)
-
-        if override:
-            path = (override,)
+        self._register_type(path, basetype, builder_state)
 
         if basetype == 'object':
             for k, v in element.iteritems():
-                self._traverse(v, (path + (k,)))
+                self._traverse(BuilderState(builder_state.path + (k,), v))
 
         elif basetype == 'array':
             array_path = path + ('$items',)
             for t in element:
-                self._traverse(t, array_path)
+                self._traverse(BuilderState(array_path, t))
 
-    def register_type(self, path, type, content, override, set_id=None):
-        if override:
-            register_type((override,), type, content, None, override)
-            type = ('$ref', override)
-
+    def _register_type(self, path, type, builder_state):
         nodes = [self.root_node]
 
         for el in path:
@@ -57,12 +60,7 @@ class DocumentVisitor(object):
         lastnode = nodes[-1]
 
         lastnode.possible_types.add(type)
-        lastnode.possible_values.append(content)
-
-        if set_id:
-            print "Setting Id"
-            lastnode.id = set_id
-
+        lastnode.possible_values.append(builder_state.element)
 
     @property
     def generated_schema(self):

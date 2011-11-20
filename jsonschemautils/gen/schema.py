@@ -9,15 +9,8 @@ class Node(object):
         self.id = None
         self.extra_props = dict()
 
-
     def _schema_for_type(self, type):
-        if type[0] == '$ref':
-            ret['$ref'] = type[1]
-            return ret
-
-        assert type[0] == 'type'
-
-        type = type[1]
+        """This is ugly.  Needs some rewriting"""
         if type == 'object':
             return dict(
                 type='object',
@@ -31,7 +24,6 @@ class Node(object):
                 items=self.props['$items'].schema
             )
         return dict(type=type)
-
 
     @property
     def schema(self):

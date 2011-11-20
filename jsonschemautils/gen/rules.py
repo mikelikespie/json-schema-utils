@@ -3,21 +3,23 @@ Rule based matching and transforming
 """
 
 import re
+import itertools
+import abc
 
 SEP_TOKEN = '@@'
 
-def BaseRule(object):
+class BaseRule(object):
     """
     Abstract class for rules.
     """
     __metaclass__ = abc.ABCMeta
     
     @abc.abstractmethod
-    def apply(self, schema_node):
+    def match(self, visitor_state):
         """
         Applies a rule to the schema node
 
-        :param schema_node: Node to apply to
+        :param schema_node: Node to match to
 
         :return:
             - ``True`` to stop matching.
@@ -27,31 +29,26 @@ def BaseRule(object):
         """
 
 
-def RuleSet(BaseRule):
+class RuleSet(BaseRule):
     """
     Collection of rules that compose into a BaseRule
     """
-    
-    def __init__(self):
-        self.rules = []
-
+    def __init__(self, rules = []):
+        self.rules = rules
 
     def add_rule(self, rule):
         """Appends a rule to the :class:`RuleSet`"""
         self.rules.append(rule)
 
 
-    def apply(self, schema_node):
+    def match(self, visitor_state):
         """Tries matching each subsequent rule until one says to stop"""
-        for r in self.rules:
-            if r.apply(schema_node):
-                return True
-
-        return None
+        return itertools.join.from_iterable(
+            r.match(visitor_state) for r in self.rules)
 
 
-def Rule(object):
-    def __init__(self, matchers, mutation, stop_on_match=False):
+class Rule(BaseRule):
+    def __init__(self, matchers, transformations):
         """
         :param matchers:
             A matcher function takes a single :class:`VisitorState`
@@ -59,32 +56,46 @@ def Rule(object):
         :type matchers:
             a single matcher function or :class:`tuple` or :class:`list`
 
-        :param mutation:
-            An instance of :class:`Mutation` which describes
+        :param transformations:
+            An instance of :class:`Transformation` which describes
             the transformation
-        :type mutation: instance of :class:`Mutation`
+        :type transformations: instance of :class:`Transformation`
 
         :param stop_on_match:
             Whether or not matching should stop after a match.
         :type stop_on_match: :class:`bool`
         """
-        if isinstance(matcher, (list, tuple)):
+        if isinstance(matchers, (list, tuple)):
             self.matchers = list(matchers)
         else:
             self.matchers = [matchers]
 
-        self.mutation = mutation
+        if isinstance(transformations, (list, tuple)):
+            self.transformations = transformations
+        else:
+            self.transformations = [transformations]
 
-    def apply(self, schema_node):
+    def match(self, visitor_state):
         """
         Iterates through the matchers
         """
+        for m in self.matchers:
+            if m(visitor_state.path):
+                return self.transformations
 
 
-def Matcher(object):
+class Matcher(object):
+    __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def __call__(self, visitor_state):
+        pass
+
+class QueryMatcher(Matcher):
     """
     Class that represents matching a JSON path.
     """
+
     def __init__(self, path_query=None):
         """
         :param path_query:
@@ -104,13 +115,13 @@ def Matcher(object):
 
     
     @abc.abstractmethod
-    def __call__(self, parse_state):
+    def __call__(self, visitor_state):
         """
-        :param parse_state: current parse state
+        :param visitor_state: current parse state
         :returns: ``True`` if we have a match
         """
         if self.path_matcher:
-            path = parse_state.path
+            path = visitor_state.path
             path_escaped = self._path_to_string_rep(path)
 
             if self.path_matcher.match(path_escaped):
@@ -125,5 +136,24 @@ def Matcher(object):
         """
         return SEP_TOKEN.join(e)
 
+class Transformation(object):
+    def transform_node(self, schema_node):
+        """
+        Mutates the :class:`schema.Node`.
+        """
+        pass
+
+class AssignID(Transformation):
+    """
+    Transformation that applies an id to a node which will also break it out
+    into a separate structure
+    """
+    def __init__(self, id):
+        self.id = id
+
+    def transform_node(self, schema_node):
+        schema_node.id = self.id
 
 
+def match_rule(path_query, assign_id):
+    return Rule(QueryMatcher(path_query), AssignID(assign_id))
