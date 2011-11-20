@@ -22,6 +22,7 @@ setup(name='json-schema-utils',
           # -*- Extra requirements: -*-
       ],
       entry_points="""
-      # -*- Entry points: -*-
+      [console_scripts]
+      jsonschemagen = jsonschemautils.gen.runner:main
       """,
       )
