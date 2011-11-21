@@ -1,23 +1,25 @@
 result:
-  items: {$ref: Tweet}
   type: array
+  items: {$ref: Tweet}
 types:
   Hashtags:
     id: Hashtags
+    type: array
     items:
+      type: object
       properties:
         indices:
-          items: {type: integer}
           type: array
+          items: {type: integer}
         text: {type: string}
-      type: object
-    type: array
   Location:
     id: Location
     type: ['null', string]
   Tweet:
     id: Tweet
+    type: object
     properties:
+      id: {type: integer}
       annotations: {type: 'null'}
       contributors: {type: 'null'}
       coordinates:
@@ -26,7 +28,6 @@ types:
       entities: {$ref: TweetEntities}
       favorited: {type: boolean}
       geo: {type: 'null'}
-      id: {type: integer}
       in_reply_to_screen_name:
         type: ['null', string]
       in_reply_to_status_id: {type: 'null'}
@@ -37,39 +38,39 @@ types:
       text: {type: string}
       truncated: {type: boolean}
       user: {$ref: User}
-    type: object
   TweetEntities:
     id: TweetEntities
+    type: object
     properties:
       hashtags: {$ref: Hashtags}
       urls: {$ref: URLEntities}
       user_mentions: {$ref: UserMentions}
-    type: object
   URLEntities:
     id: URLEntities
+    type: array
     items:
+      type: object
       properties:
         expanded_url: {type: 'null'}
         indices:
-          items: {type: integer}
           type: array
+          items: {type: integer}
         url: {type: string}
-      type: object
-    type: array
   User:
     id: User
+    type: object
     properties:
-      contributors_enabled: {type: boolean}
-      created_at: {type: string}
       description:
         type: ['null', string]
+      id: {type: integer}
+      contributors_enabled: {type: boolean}
+      created_at: {type: string}
       favourites_count: {type: integer}
       follow_request_sent: {type: boolean}
       followers_count: {type: integer}
       following: {type: boolean}
       friends_count: {type: integer}
       geo_enabled: {type: boolean}
-      id: {type: integer}
       lang: {type: string}
       location: {$ref: Location}
       name: {type: string}
@@ -93,16 +94,15 @@ types:
       utc_offset:
         type: [integer, 'null']
       verified: {type: boolean}
-    type: object
   UserMentions:
     id: UserMentions
+    type: array
     items:
+      type: object
       properties:
         id: {type: integer}
         indices:
-          items: {type: integer}
           type: array
+          items: {type: integer}
         name: {type: string}
         screen_name: {type: string}
-      type: object
-    type: array

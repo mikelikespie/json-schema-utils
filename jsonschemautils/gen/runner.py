@@ -1,6 +1,8 @@
 import argparse
 import sys
 
+from collections import OrderedDict, defaultdict, namedtuple
+
 import jsonschemautils.util
 import jsonschemautils.gen.visitor as visitor
 import jsonschemautils.metaschema
@@ -69,4 +71,5 @@ def main():
             s.items = list(s.items)[0]
 
 
-    yaml.dump(dict(types=visitor.schema_repr(types), result=visitor.schema_repr(root)), args.output_file, indent=2)
+    r = visitor.schema_repr(dict(types=types, result=root))
+    yaml.dump(r, args.output_file, indent=2)
