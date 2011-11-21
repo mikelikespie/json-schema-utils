@@ -27,9 +27,14 @@ def main():
 
     for s, path in root.iterschemas():
         s.flatten_items()
-
+#
+    # Reduce arrays of items into singel ones
     for s, path in root.iterschemas():
         if isinstance(s.type, set) and len(s.type) == 1:
             s.type = list(s.type)[0]
+
+    for s, path in root.iterschemas():
+        if isinstance(s.items, (set, list)) and len(s.items) == 1:
+            s.items = list(s.items)[0]
     
     yaml.dump(visitor.schema_repr(root), args.output_file, indent=2)

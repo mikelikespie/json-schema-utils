@@ -107,7 +107,11 @@ class Schema(object):
 
         yield self, current_path
         
-        if isinstance(self.items, set):
+        if isinstance(self.items, Schema):
+            for s, pth in self.items.iterschemas(iter_items, iter_properties, current_path=ary_path):
+                yield s, pth
+
+        elif isinstance(self.items, (set, list)):
             for i in self.items:
                 if isinstance(i, Schema):
                     for s, pth in i.iterschemas(iter_items, iter_properties, current_path=ary_path):
