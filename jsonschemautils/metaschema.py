@@ -129,16 +129,22 @@ class Schema(object):
     maximum = Undefined
     minItems = 0
     additionalProperties = {}
-    items = {}
+    items = 'any'
     type = {}
 
-    def __init__(self, **kwargs):
+    def __init__(self, raw_json=None, **kwargs):
         self.opts_list_set = set()
 
-        self.type = TypeUnion()
-        self.items = Items()
-
+        self.type = set()
+        self.items = set()
         self.properties = {}
+
+        if raw_json:
+            self.type.add(js_primitive(raw_json))
+            if isinstance(raw_json, dict):
+                self.properties = dict((k,Schema(raw_json=v)) for k,v in raw_json.iteritems())
+            elif isinstance(raw_json, list):
+                self.items = set(Schema(raw_json=v) for v in raw_json)
 
         self.patternProperties = {}
         self.extends = {}

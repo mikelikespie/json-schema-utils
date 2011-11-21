@@ -23,7 +23,6 @@ def main():
 
     d = visitor.Document()
 
-    root = jsonschemautils.metaschema.Schema()
-    root.merge_example(json.load(args.input_file))
+    root = jsonschemautils.metaschema.Schema(raw_json=json.load(args.input_file))
     
     yaml.dump(visitor.schema_repr(root), args.output_file, indent=2)
