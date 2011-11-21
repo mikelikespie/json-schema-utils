@@ -5,49 +5,14 @@ Rule based matching and transforming
 import re
 import itertools
 import abc
+from collections import namedtuple
 
 SEP_TOKEN = '@@'
 
-class BaseRule(object):
-    """
-    Abstract class for rules.
-    """
-    __metaclass__ = abc.ABCMeta
-    
-    @abc.abstractmethod
-    def match(self, visitor_state):
-        """
-        Applies a rule to the schema node
-
-        :param schema_node: Node to match to
-
-        :return:
-            - ``True`` to stop matching.
-            - ``None`` or ``False`` to continue (by not returning anything you
-                will continue)
-        :rtype: bool or none
-        """
+VisitorState = namedtuple('VisitorState', 'root_node current_path current_node')
 
 
-class RuleSet(BaseRule):
-    """
-    Collection of rules that compose into a BaseRule
-    """
-    def __init__(self, rules = []):
-        self.rules = rules
-
-    def add_rule(self, rule):
-        """Appends a rule to the :class:`RuleSet`"""
-        self.rules.append(rule)
-
-
-    def match(self, visitor_state):
-        """Tries matching each subsequent rule until one says to stop"""
-        return itertools.join.from_iterable(
-            r.match(visitor_state) for r in self.rules)
-
-
-class Rule(BaseRule):
+class Rule(object):
     def __init__(self, matchers, transformations):
         """
         :param matchers:
@@ -75,7 +40,7 @@ class Rule(BaseRule):
         else:
             self.transformations = [transformations]
 
-    def match(self, visitor_state):
+    def __call__(self, visitor_state):
         """
         Iterates through the matchers
         """
@@ -90,6 +55,7 @@ class Matcher(object):
     @abc.abstractmethod
     def __call__(self, visitor_state):
         pass
+
 
 class QueryMatcher(Matcher):
     """
@@ -107,13 +73,11 @@ class QueryMatcher(Matcher):
                 '*.id'              # matches all properties named id
                 '*.*_url'           # matches all properties that end with '_url'
         """
-
         if path_query:
             self.path_matcher = re.escape(query.replace('.', SEP_TOKEN)).replace('\\*', r'.*')
         else:
             self.path_matcher = None
 
-    
     @abc.abstractmethod
     def __call__(self, visitor_state):
         """
@@ -136,23 +100,17 @@ class QueryMatcher(Matcher):
         """
         return SEP_TOKEN.join(e)
 
-class Transformation(object):
-    def transform_node(self, schema_node):
-        """
-        Mutates the :class:`schema.Node`.
-        """
-        pass
 
-class AssignID(Transformation):
+class MakeRef(object):
     """
     Transformation that applies an id to a node which will also break it out
     into a separate structure
     """
-    def __init__(self, id):
-        self.id = id
+    def __init__(self, ref_id):
+        self.id = ref_id
 
-    def transform_node(self, schema_node):
-        schema_node.id = self.id
+    def __call__(self, schema_node):
+        schema_node.id = self.ref_id
 
 
 def match_rule(path_query, assign_id):

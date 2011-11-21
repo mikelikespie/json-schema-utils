@@ -3,6 +3,7 @@ import sys
 
 import jsonschemautils.util
 import jsonschemautils.gen.visitor as visitor
+import jsonschemautils.metaschema
 
 import json
 import yaml
@@ -20,7 +21,9 @@ def main():
     args = parse_args()
     jsonschemautils.util.setup_yaml()
 
-    v = visitor.DocumentVisitor()
-    v.walk_document(json.load(args.input_file))
+    d = visitor.Document()
+
+    root = jsonschemautils.metaschema.Schema()
+    root.merge_example(json.load(args.input_file))
     
-    yaml.dump(v.generated_schema, args.output_file, indent=2)
+    yaml.dump(visitor.schema_repr(root), args.output_file, indent=2)

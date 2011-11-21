@@ -1,66 +1,61 @@
 from collections import namedtuple
 
-from schema import Node
 from jsonschemautils.util import js_primitive
-from rules import RuleSet
+from jsonschemautils.metaschema import Schema, schema_repr
 
 
-_BuilderState = namedtuple('BuilderState', ['path', 'element'])
-class BuilderState(_BuilderState):
-    """
-    State of the visitor
-    """
 
-
-class DocumentVisitor(object):
-    def __init__(self, rules=RuleSet()):
+class Document(object):
+    def __init__(self, rules=()):
         """
         :param rules: Rules to apply while walking
         :type rules: :class:`rules.BaseRule`
         """
  
-        self.root_node = Node()
-        self.root_node.possible_types.add('object')
         self.rules = rules
 
-    def walk_document(self, document):
-        if isinstance(document, list):
-            for e in document:
-                self._traverse(BuilderState((), e))
-        else:
-            self._traverse(BuilderState((), document))
+        self.root = Schema()
+
+    def merge_example(self, element):
+        self.merge_example_primitive(gelement)
+
+        if isinstance(element, dict):
+            self.merge_example_object(gelement)
+        elif isinstance(element, list):
+            self.merge_example_array(gelement)
+
+    def merge_example_array(self, element):
+        """
+        right now we treat arrays as if they only can contain more objects
+        """
+        schema = self.items_schema
+        for item in element:
+            self.merge_example(schema, item)
+
+    def merge_example_primitive(self, element):
+        self.add_type(js_primitive(element))
+
+    def merge_example_object(self, element):
+        for name, prop in element.iteritems():
+            self.add_property(name)
+            schema = self.properties[name]
+            self.merge_example(schema, prop)
 
 
-    def _traverse(self, builder_state):
-        path = builder_state.path
-        element = builder_state.element
-
-        # TODO: enum detection
-        basetype = js_primitive(element)
-
-
-        self._register_type(path, basetype, builder_state)
-
-        if basetype == 'object':
-            for k, v in element.iteritems():
-                self._traverse(BuilderState(builder_state.path + (k,), v))
-
-        elif basetype == 'array':
-            array_path = path + ('$items',)
-            for t in element:
-                self._traverse(BuilderState(array_path, t))
-
-    def _register_type(self, path, type, builder_state):
-        nodes = [self.root_node]
+    def _schema_for_path(self, path):
+        target_node = self.root_node
 
         for el in path:
-            n = nodes[-1]
+            if el != '$items':
+                target_node = target_node.properties[el]
+            else:
+                target_node = target_node.items
+
             nodes.append(n.props[el])
 
-        lastnode = nodes[-1]
 
-        lastnode.possible_types.add(type)
-        lastnode.possible_values.append(builder_state.element)
+    def __repr__(self):
+        return repr(self.root)
 
     @property
     def generated_schema(self):
