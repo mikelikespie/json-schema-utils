@@ -108,24 +108,20 @@ class Schema(object):
         yield self, current_path
         
         if isinstance(self.items, Schema):
-            for s, pth in self.items.iterschemas(iter_items, iter_properties, current_path=ary_path):
+            for s, pth in self.items.iterschemas(current_path=ary_path):
                 yield s, pth
 
         elif isinstance(self.items, (set, list)):
             for i in self.items:
                 if isinstance(i, Schema):
-                    for s, pth in i.iterschemas(iter_items, iter_properties, current_path=ary_path):
+                    for s, pth in i.iterschemas(current_path=ary_path):
                         yield s, pth
 
         for n, e in self.properties.iteritems():
             if isinstance(e, Schema):
                 p_path = current_path + (n,)
-                for s, pth in e.iterschemas(iter_items, iter_properties, current_path=p_path):
+                for s, pth in e.iterschemas(current_path=p_path):
                     yield s, pth
-
-    def all_schemas(self):
-        return (s for s in itertools.chain(self.items, self.properties.itervalues())
-                if isinstance(s, Schema))
 
     # Should this be immutable?
     def flatten_items(self):
