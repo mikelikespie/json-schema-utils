@@ -24,5 +24,12 @@ def main():
     d = visitor.Document()
 
     root = jsonschemautils.metaschema.Schema(raw_json=json.load(args.input_file))
+
+    for s, path in root.iterschemas():
+        s.flatten_items()
+
+    for s, path in root.iterschemas():
+        if isinstance(s.type, set) and len(s.type) == 1:
+            s.type = list(s.type)[0]
     
     yaml.dump(visitor.schema_repr(root), args.output_file, indent=2)

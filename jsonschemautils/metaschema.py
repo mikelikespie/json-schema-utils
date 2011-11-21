@@ -4,6 +4,7 @@ from jsonschemautils.util import js_primitive
 
 import json
 import weakref
+import itertools
 
 class Undefined(object):
     @classmethod
@@ -21,136 +22,42 @@ def schema_repr(o):
     else:
         return o
 
-
-class TypeUnion(object):
-    def __init__(self, types=(), default='any'):
-        self.types = set(types)
-        self.default = default
-
-    
-    def __schema_repr__(self):
-        types = [schema_repr(t) for t in self.types]
-        if len(types) == 1:
-            single_obj = types[0]
-            if isinstance(single_obj, dict):
-                return types
-            elif isinstance(single_obj, basestring):
-                return single_obj
-            else:
-                raise Exception("unknown type %s", single_obj)
-        elif types:
-            return types
-        else:
-            return self.default
-
-class Items(object):
-    """
-    Going to limit items to a single schema obj
-    """
-    def __init__(self):
-        self.types = set()
-        self.default = {}
-
-
-    @property
-    def schema_item(self):
-        for t in self.types:
-            if isinstance(t, Schema):
-                return t
-
-        return None
-
-    def __schema_repr__(self):
-        types = [schema_repr(t) for t in self.types]
-        if len(types) == 1:
-            single_obj = types[0]
-            if isinstance(single_obj, dict):
-                return types[0]
-            elif isinstance(single_obj, basestring):
-                return single_obj
-            else: assert False
-        elif types:
-            return types
-        else:
-            return self.default
-
-
-
-#def lazyproperty(real_name, default):
-#    def get(self):
-#        if hasattr(self, real_name):
-#            return getattr(self, real_name)
-#        else:
-#            return default
-#
-#    def set(self, value):
-#        setattr(self, real_name, value)
-#
-#
-#    return property(get, set)
-
-
-
-#class SchemaItems(object):
-#    def __init__(self, Schema):
-
 class Schema(object):
-    __property_names__ = ("minimum", "maxItems", "_schema", "exclusiveMinimum", "id",
-                          "_ref", "exclusiveMaximum", "title", "pattern",
-                          "patternProperties", "extends", "type", "description",
-                          "format", "minLength", "enum", "disallow", "divisibleBy",
-                          "dependencies", "maxLength", "uniqueItems", "properties",
-                          "additionalItems", "default", "items", "required", "maximum",
-                          "minItems", "additionalProperties")
-    minimum = Undefined
-    maxItems = Undefined
-    _schema = Undefined
-    exclusiveMinimum = False
-    id = Undefined
-    _ref = Undefined
-    exclusiveMaximum = False
-    title = Undefined
-    pattern = Undefined
-    patternProperties = {}
-    extends = {}
-    description = Undefined
-    format = Undefined
-    minLength = 0
-    enum = Undefined
-    disallow = Undefined
-    divisibleBy = 1
-    dependencies = {}
-    maxLength = Undefined
-    uniqueItems = False
-    properties = {}
-    additionalItems = {}
-    default = Undefined
-    required = False
-    maximum = Undefined
-    minItems = 0
-    additionalProperties = {}
-    items = 'any'
-    type = {}
+    __slots__ = ("minimum", "maxItems", "_schema", "exclusiveMinimum", "id",
+                 "_ref", "exclusiveMaximum", "title", "pattern",
+                 "patternProperties", "extends", "type", "description",
+                 "format", "minLength", "enum", "disallow", "divisibleBy",
+                 "dependencies", "maxLength", "uniqueItems", "properties",
+                 "additionalItems", "default", "items", "required", "maximum",
+                 "minItems", "additionalProperties")
 
-    def __init__(self, raw_json=None, **kwargs):
-        self.opts_list_set = set()
+    __defaults__ = dict(exclusiveMinimum=False,
+                        exclusiveMaximum=False,
+                        patternProperties={},
+                        extends={},
+                        minLength=0,
+                        divisibleBy=1,
+                        dependencies={},
+                        uniqueItems=False,
+                        properties={},
+                        additionalItems={},
+                        required=False,
+                        minItems=0,
+                        additionalProperties={},
+                        items=set(),
+                        type=set())
+    def __init__(self, raw_json=Undefined, **kwargs):
 
-        self.type = set()
-        self.items = set()
         self.properties = {}
+        self.items = set()
+        self.type = set()
 
-        if raw_json:
-            self.type.add(js_primitive(raw_json))
+        if raw_json is not Undefined:
+            self.type = set([js_primitive(raw_json)])
             if isinstance(raw_json, dict):
                 self.properties = dict((k,Schema(raw_json=v)) for k,v in raw_json.iteritems())
             elif isinstance(raw_json, list):
                 self.items = set(Schema(raw_json=v) for v in raw_json)
-
-        self.patternProperties = {}
-        self.extends = {}
-        self.dependencies = {}
-        self.additionalItems = {}
-        self.additionalProperties = {}
 
         for k,v in kwargs.iteritems():
             getattr(self, k) # hack to validate we have this property
@@ -159,62 +66,70 @@ class Schema(object):
     def __schema_repr__(self):
         return dict((prop_name.replace("$", "_"), schema_repr(getattr(self, prop_name)))
                     for prop_name
-                    in self.__property_names__
-                    if schema_repr(getattr(self, prop_name)) != schema_repr(getattr(self.__class__, prop_name))) 
+                    in self.__slots__
+                    if hasattr(self, prop_name) and \
+                        schema_repr(getattr(self, prop_name)) != schema_repr(self.__defaults__.get(prop_name)))
 
     def __repr__(self):
         return '<Schema (%s)>' % json.dumps(schema_repr(self))
 
-    def add_type(self, typename):
-        self.type.types.add(typename)
 
-    def add_property(self, property_name):
-        assert 'object' in self.type.types
-        if property_name not in self.properties:
-            self.properties[property_name] = Schema()
+    def merge_copy(self, other):
+        new_type = self.type | other.type
 
-    def add_array_items_type(self, typename):
-        assert 'array' in self.type.types
-        self.items.types.add(typename)
+        new_items = self.items | other.items
 
-    def add_array_items_schema(self):
-        assert 'array' in self.type.types
-        if self.items.schema_item is None:
-            self.items.types.add(Schema())
+        new_properties = {}
 
-    @property
-    def items_schema(self):
-        self.add_array_items_schema()
-        return self.items.schema_item
+        all_property_names = set(self.properties.keys() + other.properties.keys())
 
-    @property
-    def property_schema(self, property_name):
-        self.add_property(property_name)
-        return self.properties[property_name]
+        for prop_name in all_property_names:
+            p = self.properties.get(prop_name)
+            other_p = other.properties.get(prop_name)
 
-    ## Merging
-    def merge_example(self, element):
-        self.merge_example_primitive(element)
+            if p and other_p:
+                new_properties[prop_name] = p.merge_copy(other_p)
+            elif p:
+                new_properties[prop_name] = p
+            else:
+                new_properties[prop_name] = other_p
 
-        if isinstance(element, dict):
-            self.merge_example_object(element)
-        elif isinstance(element, list):
-            self.merge_example_array(element)
 
-    def merge_example_array(self, element):
-        """
-        right now we treat arrays as if they only can contain more objects
-        """
-        schema = self.items_schema
-        for item in element:
-            schema.merge_example(item)
+        return Schema(items=new_items,
+                      type=new_type,
+                      properties=new_properties)
 
-    def merge_example_primitive(self, element):
-        self.add_type(js_primitive(element))
 
-    def merge_example_object(self, element):
-        for name, prop in element.iteritems():
-            self.add_property(name)
-            schema = self.properties[name]
-            schema.merge_example(prop)
+    def iterschemas(self, iter_items=True, iter_properties=True, current_path=()):
+        iterchain = []
+
+        ary_path = current_path + ('[]',)
+
+        yield self, current_path
+        
+        if isinstance(self.items, set):
+            for i in self.items:
+                if isinstance(i, Schema):
+                    for s, pth in i.iterschemas(iter_items, iter_properties, current_path=ary_path):
+                        yield s, pth
+
+        for n, e in self.properties.iteritems():
+            if isinstance(e, Schema):
+                p_path = current_path + (n,)
+                for s, pth in e.iterschemas(iter_items, iter_properties, current_path=p_path):
+                    yield s, pth
+
+    def all_schemas(self):
+        return (s for s in itertools.chain(self.items, self.properties.itervalues())
+                if isinstance(s, Schema))
+
+    # Should this be immutable?
+    def flatten_items(self):
+        if self.items:
+            def rfunc(cur_schema, schema):
+                return cur_schema.merge_copy(schema)
+            self.items = set([reduce(rfunc, self.items)])
+
+
+
 
