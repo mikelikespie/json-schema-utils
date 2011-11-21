@@ -50,13 +50,13 @@ def main():
             if len(path) >= 2 and path[-2] == parent_path_name and path[-1] == '[]':
                 s.to_ref(types[id])
 
-    break_to_type('user', 'User')
     break_to_type('location', 'Location')
-    break_to_type('entities', 'TweetEntities')
     break_to_type(('entities', 'urls'), 'URLEntities')
     break_to_type(('entities', 'user_mentions'), 'UserMentions')
     break_to_type(('entities', 'hashtags'), 'Hashtags')
     break_items('#', 'Tweet')
+    break_to_type('entities', 'TweetEntities')
+    break_to_type('user', 'User')
 
     for s, path in root.iterschemas():
         s.flatten_items()
