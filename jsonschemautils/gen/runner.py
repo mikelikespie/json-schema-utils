@@ -43,20 +43,26 @@ def main():
             if len(path) >= len(path_name) and path[-len(path_name):] == path_name:
                 s.to_ref(types[id])
 
-    def break_items(parent_path_name, id):
+    def break_items(path_name, id):
+        if not isinstance(path_name, (tuple, list)):
+            path_name = (path_name,)
+        path_name = path_name +  ('[]',)
         if id not in types:
             types[id] = Schema(id=id, type=set(['object']))
         for s, path in root.iterschemas():
-            if len(path) >= 2 and path[-2] == parent_path_name and path[-1] == '[]':
+            if len(path) >= len(path_name) and path[-len(path_name):] == path_name:
                 s.to_ref(types[id])
 
+    break_to_type('place', 'Place')
+    break_to_type('retweeted_status', 'RetweetedStatus')
     break_to_type('location', 'Location')
-    break_to_type(('entities', 'urls'), 'URLEntities')
-    break_to_type(('entities', 'user_mentions'), 'UserMentions')
-    break_to_type(('entities', 'hashtags'), 'Hashtags')
-    break_items('#', 'Tweet')
-    break_to_type('entities', 'TweetEntities')
+    break_items(('entities', 'urls'), 'URLEntity')
+    break_items(('entities', 'user_mentions'), 'UserMention')
+    break_items(('entities', 'hashtags'), 'Hashtag')
+    break_items('#', 'Status')
+    break_to_type('entities', 'Entities')
     break_to_type('user', 'User')
+    break_to_type('user_id', 'UserId')
 
     for s, path in root.iterschemas():
         s.flatten_items()
