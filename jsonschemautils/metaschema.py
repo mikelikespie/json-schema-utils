@@ -43,14 +43,18 @@ class Schema(object):
                         additionalItems={},
                         required=False,
                         minItems=0,
+                        id=None,
                         additionalProperties={},
                         items=set(),
                         type=set())
+
     def __init__(self, raw_json=Undefined, **kwargs):
 
         self.properties = {}
         self.items = set()
         self.type = set()
+        self.id = None
+        self._ref = None
 
         if raw_json is not Undefined:
             self.type = set([js_primitive(raw_json)])
@@ -60,48 +64,45 @@ class Schema(object):
                 self.items = set(Schema(raw_json=v) for v in raw_json)
 
         for k,v in kwargs.iteritems():
-            getattr(self, k) # hack to validate we have this property
             setattr(self, k, v)
 
     def __schema_repr__(self):
-        return dict((prop_name.replace("$", "_"), schema_repr(getattr(self, prop_name)))
-                    for prop_name
-                    in self.__slots__
-                    if hasattr(self, prop_name) and \
-                        schema_repr(getattr(self, prop_name)) != schema_repr(self.__defaults__.get(prop_name)))
+        if self._ref:
+            return {'$ref':self._ref.id}
+        else:
+            return dict((prop_name.replace("$", "_"), schema_repr(getattr(self, prop_name)))
+                        for prop_name
+                        in self.__slots__
+                        if hasattr(self, prop_name) and \
+                            schema_repr(getattr(self, prop_name)) != schema_repr(self.__defaults__.get(prop_name)))
 
     def __repr__(self):
         return '<Schema (%s)>' % json.dumps(schema_repr(self))
 
 
-    def merge_copy(self, other):
-        new_type = self.type | other.type
+    def merge(self, other):
+        self.type = self.type | other.type
+        self.items = self.items | other.items
 
-        new_items = self.items | other.items
-
-        new_properties = {}
-
-        all_property_names = set(self.properties.keys() + other.properties.keys())
-
-        for prop_name in all_property_names:
-            p = self.properties.get(prop_name)
-            other_p = other.properties.get(prop_name)
-
-            if p and other_p:
-                new_properties[prop_name] = p.merge_copy(other_p)
-            elif p:
-                new_properties[prop_name] = p
+        for k,v in other.properties.iteritems():
+            if k in self.properties:
+                self.properties[k].merge(v)
             else:
-                new_properties[prop_name] = other_p
+                self.properties[k] = v
+
+        if not self.id:
+            self.id = other.id
+        else:
+            assert self.id == other.id or not other.id
+            
 
 
-        return Schema(items=new_items,
-                      type=new_type,
-                      properties=new_properties)
+    def iterschemas(self, current_path=('#',)):
 
-
-    def iterschemas(self, iter_items=True, iter_properties=True, current_path=()):
-        iterchain = []
+        if self._ref:
+            for e in self._ref.iterschemas(current_path):
+                yield e
+            return
 
         ary_path = current_path + ('[]',)
 
@@ -123,13 +124,14 @@ class Schema(object):
                 for s, pth in e.iterschemas(current_path=p_path):
                     yield s, pth
 
+    def to_ref(self, other_node):
+        other_node.merge(self)
+        self._ref = other_node
+
     # Should this be immutable?
     def flatten_items(self):
         if self.items:
-            def rfunc(cur_schema, schema):
-                return cur_schema.merge_copy(schema)
-            self.items = set([reduce(rfunc, self.items)])
-
-
-
-
+            i = self.items.pop()
+            for o in self.items:
+                i.merge(o)
+            self.items = set([i])

@@ -1,92 +1,108 @@
-items:
-  properties:
-    annotations: {type: 'null'}
-    contributors: {type: 'null'}
-    coordinates:
-      type: ['null', string]
-    created_at: {type: string}
-    entities:
+result:
+  items: {$ref: Tweet}
+  type: array
+types:
+  Hashtags:
+    id: Hashtags
+    items:
       properties:
-        hashtags:
-          items:
-            properties:
-              indices:
-                items: {type: integer}
-                type: array
-              text: {type: string}
-            type: object
+        indices:
+          items: {type: integer}
           type: array
-        urls:
-          items:
-            properties:
-              expanded_url: {type: 'null'}
-              indices:
-                items: {type: integer}
-                type: array
-              url: {type: string}
-            type: object
-          type: array
-        user_mentions:
-          items:
-            properties:
-              id: {type: integer}
-              indices:
-                items: {type: integer}
-                type: array
-              name: {type: string}
-              screen_name: {type: string}
-            type: object
-          type: array
+        text: {type: string}
       type: object
-    favorited: {type: boolean}
-    geo: {type: 'null'}
-    id: {type: integer}
-    in_reply_to_screen_name:
-      type: ['null', string]
-    in_reply_to_status_id: {type: 'null'}
-    in_reply_to_user_id:
-      type: [integer, 'null']
-    place: {type: 'null'}
-    source: {type: string}
-    text: {type: string}
-    truncated: {type: boolean}
-    user:
+    type: array
+  Location:
+    id: Location
+    type: ['null', string]
+  Tweet:
+    id: Tweet
+    properties:
+      annotations: {type: 'null'}
+      contributors: {type: 'null'}
+      coordinates:
+        type: ['null', string]
+      created_at: {type: string}
+      entities: {$ref: TweetEntities}
+      favorited: {type: boolean}
+      geo: {type: 'null'}
+      id: {type: integer}
+      in_reply_to_screen_name:
+        type: ['null', string]
+      in_reply_to_status_id: {type: 'null'}
+      in_reply_to_user_id:
+        type: [integer, 'null']
+      place: {type: 'null'}
+      source: {type: string}
+      text: {type: string}
+      truncated: {type: boolean}
+      user: {$ref: User}
+    type: object
+  TweetEntities:
+    id: TweetEntities
+    properties:
+      hashtags: {$ref: Hashtags}
+      urls: {$ref: URLEntities}
+      user_mentions: {$ref: UserMentions}
+    type: object
+  URLEntities:
+    id: URLEntities
+    items:
       properties:
-        contributors_enabled: {type: boolean}
-        created_at: {type: string}
-        description:
-          type: ['null', string]
-        favourites_count: {type: integer}
-        follow_request_sent: {type: boolean}
-        followers_count: {type: integer}
-        following: {type: boolean}
-        friends_count: {type: integer}
-        geo_enabled: {type: boolean}
+        expanded_url: {type: 'null'}
+        indices:
+          items: {type: integer}
+          type: array
+        url: {type: string}
+      type: object
+    type: array
+  User:
+    id: User
+    properties:
+      contributors_enabled: {type: boolean}
+      created_at: {type: string}
+      description:
+        type: ['null', string]
+      favourites_count: {type: integer}
+      follow_request_sent: {type: boolean}
+      followers_count: {type: integer}
+      following: {type: boolean}
+      friends_count: {type: integer}
+      geo_enabled: {type: boolean}
+      id: {type: integer}
+      lang: {type: string}
+      location: {$ref: Location}
+      name: {type: string}
+      notifications: {type: boolean}
+      profile_background_color: {type: string}
+      profile_background_image_url: {type: string}
+      profile_background_tile: {type: boolean}
+      profile_image_url: {type: string}
+      profile_link_color: {type: string}
+      profile_sidebar_border_color: {type: string}
+      profile_sidebar_fill_color: {type: string}
+      profile_text_color: {type: string}
+      profile_use_background_image: {type: boolean}
+      protected: {type: boolean}
+      screen_name: {type: string}
+      statuses_count: {type: integer}
+      time_zone:
+        type: ['null', string]
+      url:
+        type: ['null', string]
+      utc_offset:
+        type: [integer, 'null']
+      verified: {type: boolean}
+    type: object
+  UserMentions:
+    id: UserMentions
+    items:
+      properties:
         id: {type: integer}
-        lang: {type: string}
-        location:
-          type: ['null', string]
+        indices:
+          items: {type: integer}
+          type: array
         name: {type: string}
-        notifications: {type: boolean}
-        profile_background_color: {type: string}
-        profile_background_image_url: {type: string}
-        profile_background_tile: {type: boolean}
-        profile_image_url: {type: string}
-        profile_link_color: {type: string}
-        profile_sidebar_border_color: {type: string}
-        profile_sidebar_fill_color: {type: string}
-        profile_text_color: {type: string}
-        profile_use_background_image: {type: boolean}
-        protected: {type: boolean}
         screen_name: {type: string}
-        statuses_count: {type: integer}
-        time_zone:
-          type: ['null', string]
-        url:
-          type: ['null', string]
-        utc_offset:
-          type: [integer, 'null']
-        verified: {type: boolean}
       type: object
-  type: object
-type: array
+    type: array
