@@ -4,7 +4,7 @@ import sys
 from collections import OrderedDict, defaultdict, namedtuple
 
 import jsonschemautils.util
-import jsonschemautils.gen.visitor as visitor
+#import jsonschemautils.gen.visitor as visitor
 import jsonschemautils.metaschema
 from jsonschemautils.metaschema import Schema
 
@@ -24,7 +24,6 @@ def main():
     args = parse_args()
     jsonschemautils.util.setup_yaml()
 
-    d = visitor.Document()
 
     root = jsonschemautils.metaschema.Schema(raw_json=json.load(args.input_file))
 
@@ -53,16 +52,17 @@ def main():
             if len(path) >= len(path_name) and path[-len(path_name):] == path_name:
                 s.to_ref(types[id])
 
-    break_to_type('place', 'Place')
-    break_to_type('retweeted_status', 'RetweetedStatus')
-    break_to_type('location', 'Location')
-    break_items(('entities', 'urls'), 'URLEntity')
-    break_items(('entities', 'user_mentions'), 'UserMention')
-    break_items(('entities', 'hashtags'), 'Hashtag')
-    break_items('#', 'Status')
-    break_to_type('entities', 'Entities')
-    break_to_type('user', 'User')
-    break_to_type('user_id', 'UserId')
+#    break_to_type('place', 'Place')
+#    break_to_type('retweeted_status', 'RetweetedStatus')
+#    break_to_type('location', 'Location')
+#    break_items(('entities', 'urls'), 'URLEntity')
+#    break_items(('entities', 'user_mentions'), 'UserMention')
+#    break_items(('entities', 'hashtags'), 'Hashtag')
+#    break_items('#', 'Status')
+#    break_to_type('entities', 'Entities')
+#    break_to_type('user', 'User')
+#    break_to_type('user_id', 'UserId')
+
 
     for s, path in root.iterschemas():
         s.flatten_items()
@@ -77,5 +77,5 @@ def main():
             s.items = list(s.items)[0]
 
 
-    r = visitor.schema_repr(dict(types=types, result=root))
+    r = jsonschemautils.metaschema.schema_repr(dict(types=types, result=root))
     yaml.dump(r, args.output_file, indent=2)
